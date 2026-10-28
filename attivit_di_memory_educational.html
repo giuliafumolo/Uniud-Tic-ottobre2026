@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorio Didattico di Memory & Associazione Interattivo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Fredoka & Inter per massima leggibilità ed ergonomia visiva -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tone.js per effetti sonori generativi senza dipendenze da file esterni -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Fredoka', 'cursive'],
+                    },
+                    colors: {
+                        brand: {
+                            blue: '#3B82F6',
+                            purple: '#8B5CF6',
+                            green: '#10B981',
+                            amber: '#F59E0B',
+                            pink: '#EC4899',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            min-height: 100vh;
+        }
+
+        .font-display {
+            font-family: 'Fredoka', cursive;
+        }
+
+        /* Effetti 3D Flipping per le carte */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+
+        .transform-style-3d {
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+
+        .backface-hidden {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+
+        /* Animazioni personalizzate */
+        @keyframes pulse-gentle {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+
+        .animate-pulse-gentle {
+            animation: pulse-gentle 2s infinite ease-in-out;
+        }
+
+        @keyframes bounce-short {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .animate-bounce-short {
+            animation: bounce-short 0.5s ease 2;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased flex flex-col min-h-screen pb-12">
+
+    <!-- Header Principale -->
+    <header class="bg-white/90 backdrop-blur-md border-b border-sky-100 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-sky-200">
+                    <i class="fa-solid fa-brain text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-bold font-display text-slate-800 tracking-wide">Laboratorio Memory Didattico</h1>
+                    <p class="text-xs text-slate-500 font-medium">Percorsi inclusivi, stimolazione cognitiva e apprendimento continuo</p>
+                </div>
+            </div>
+
+            <!-- Controlli Globali Accessibilità (Audio / Synth) -->
+            <div class="flex items-center gap-2 bg-sky-50 p-1.5 rounded-xl border border-sky-100">
+                <button id="toggleAudioBtn" onclick="toggleGlobalAudio()" class="px-3 py-1.5 rounded-lg bg-white shadow-sm hover:bg-sky-100 text-sky-700 font-medium text-sm flex items-center gap-2 transition-all">
+                    <i id="audioIcon" class="fa-solid fa-volume-high"></i>
+                    <span id="audioText">Effetti Audio: ON</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigazione Schede / Attività -->
+    <nav class="max-w-6xl mx-auto px-4 mt-6">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 p-1.5 bg-slate-200/60 backdrop-blur-sm rounded-2xl">
+            <button onclick="switchTab(1)" id="tab-btn-1" class="tab-btn flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-4 rounded-xl font-display font-semibold text-sm transition-all shadow-sm bg-white text-sky-600">
+                <i class="fa-solid fa-1 text-base"></i>
+                <span>Comprensione & Sequenza</span>
+            </button>
+            <button onclick="switchTab(2)" id="tab-btn-2" class="tab-btn flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-4 rounded-xl font-display font-semibold text-sm text-slate-600 hover:text-sky-600 hover:bg-white/50 transition-all">
+                <i class="fa-solid fa-2 text-base"></i>
+                <span>Audio-Concetti (Storia)</span>
+            </button>
+            <button onclick="switchTab(3)" id="tab-btn-3" class="tab-btn flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-4 rounded-xl font-display font-semibold text-sm text-slate-600 hover:text-sky-600 hover:bg-white/50 transition-all">
+                <i class="fa-solid fa-3 text-base"></i>
+                <span>Scienze: Vertebrati</span>
+            </button>
+            <button onclick="switchTab(4)" id="tab-btn-4" class="tab-btn flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-4 rounded-xl font-display font-semibold text-sm text-slate-600 hover:text-sky-600 hover:bg-white/50 transition-all">
+                <i class="fa-solid fa-4 text-base"></i>
+                <span>Storia & Grammatica</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Contenitore Principale Attività -->
+    <main class="max-w-6xl mx-auto px-4 mt-6 flex-grow w-full">
+
+        <!-- ================= ATTIVITÀ 1 ================= -->
+        <section id="activity-1" class="tab-content block">
+            <div class="bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-sky-100">
+                <!-- Banner Titolo & Difficoltà -->
+                <div class="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+                    <div>
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 uppercase tracking-wider mb-2">
+                            <i class="fa-solid fa-circle text-[8px]"></i> Difficoltà Facile • Disabilità / Autismo
+                        </span>
+                        <h2 class="text-2xl md:text-3xl font-display font-bold text-slate-800">Attività 1: Comprensione del Testo e Sequenzialità</h2>
+                    </div>
+                    <!-- Pulsante Lettura Vocale -->
+                    <button onclick="speakText(act1Sentence)" class="flex items-center gap-2 px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-white rounded-2xl shadow-md transition-all font-medium text-sm">
+                        <i class="fa-solid fa-volume-high text-lg"></i>
+                        <span>Leggi Frase</span>
+                    </button>
+                </div>
+
+                <!-- Box Frase di Esempio -->
+                <div class="bg-amber-50/80 border-2 border-amber-200/80 rounded-2xl p-5 mb-6 relative">
+                    <div class="flex items-start gap-4">
+                        <div class="p-3 bg-amber-200/60 rounded-xl text-amber-800 hidden sm:block">
+                            <i class="fa-solid fa-book-open-reader text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xs uppercase font-bold tracking-wider text-amber-800 mb-1">Ascolta o Leggi con attenzione:</h3>
+                            <p id="act1-sentence-text" class="text-base md:text-lg text-slate-800 leading-relaxed font-medium">
+                                "OGNI GIORNO LUIGI DOPO ESSERSI ALZATO FA COLAZIONE MANGIANDO UNA MELA, POI SI LAVA I DENTI E SI VESTE. PRIMA DI USCIRE DI CASA CONTROLLA LO ZAINO E SI INCAMMINA PER ANDARE A SCUOLA."
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Istruzioni del Gioco -->
+                <div class="mb-6 flex items-center justify-between">
+                    <p class="text-sm md:text-base text-slate-600 font-medium">
+                        <i class="fa-solid fa-hand-pointer text-sky-500 mr-2"></i>
+                        Seleziona le <strong class="text-sky-700">2 immagini corrette</strong> presenti nella storia di Luigi:
+                    </p>
+                    <span id="act1-score" class="text-sm font-bold bg-sky-100 text-sky-800 px-3 py-1 rounded-lg">Selezionate: 0 / 2</span>
+                </div>
+
+                <!-- Griglia Opzioni (Mela, Amaca, Rubinetto, Zaino) -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-6 mb-8" id="act1-grid">
+                    <!-- Generato via JavaScript -->
+                </div>
+
+                <!-- Pulsante Reset/Ricomincia -->
+                <div class="flex justify-end border-t border-slate-100 pt-4">
+                    <button onclick="initActivity1()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold transition-all">
+                        <i class="fa-solid fa-rotate-right mr-1"></i> Ricomincia
+                    </button>
+                </div>
+
+                <!-- Scheda Obiettivi Pedagogici Didattici -->
+                <div class="mt-8 pt-6 border-t border-dashed border-slate-200">
+                    <button onclick="toggleObiettivi('act1-goals')" class="w-full flex items-center justify-between text-left text-slate-700 font-display font-semibold hover:text-sky-600 transition-colors">
+                        <span class="flex items-center gap-2"><i class="fa-solid fa-graduation-cap text-sky-500"></i> Obiettivi Didattici e Pedagogici (Scheda Docente)</span>
+                        <i id="act1-goals-icon" class="fa-solid fa-chevron-down transition-transform"></i>
+                    </button>
+                    <div id="act1-goals" class="hidden mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl text-sm">
+                        <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-100">
+                            <h4 class="font-bold text-sky-700 mb-1 flex items-center gap-1.5"><i class="fa-solid fa-bullseye"></i> Obiettivi Primari:</h4>
+                            <ul class="list-disc list-inside text-slate-600 space-y-1 text-xs md:text-sm">
+                                <li>Memorizzazione delle informazioni base di un testo.</li>
+                                <li>Memorizzazione della sequenzialità delle azioni quotidiane.</li>
+                                <li>Riconoscimento ed esclusione degli elementi distrattori.</li>
+                                <li>Stimolazione del ragionamento logico sequenziale.</li>
+                            </ul>
+                        </div>
+                        <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-100">
+                            <h4 class="font-bold text-purple-700 mb-1 flex items-center gap-1.5"><i class="fa-solid fa-heart"></i> Obiettivi Secondari:</h4>
+                            <ul class="list-disc list-inside text-slate-600 space-y-1 text-xs md:text-sm">
+                                <li>Rafforzamento dell'autostima tramite feedback positivo immediato.</li>
+                                <li>Coinvolgimento attivo del discente mediante interazioni visivo-acustiche.</li>
+                                <li>Supporto alla comunicazione aumentativa e visiva.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= ATTIVITÀ 2 ================= -->
+        <section id="activity-2" class="tab-content hidden">
+            <div class="bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-sky-100">
+                <div class="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+                    <div>
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 uppercase tracking-wider mb-2">
+                            <i class="fa-solid fa-circle text-[8px]"></i> Difficoltà Intermedia • Storia / Audio-Concetti
+                        </span>
+                        <h2 class="text-2xl md:text-3xl font-display font-bold text-slate-800">Attività 2: Memory Audio-Concetti e Definizioni</h2>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm text-slate-600 font-medium">
+                        <span class="bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-xl border border-indigo-100">
+                            <i class="fa-solid fa-volume-low mr-1"></i> Tocca l'altoparlante per la definizione
+                        </span>
+                    </div>
+                </div>
+
+                <p class="text-slate-600 font-medium mb-6">
+                    Associa ciascuna <strong>immagine storica</strong> alla tesserina con la corrispondente <strong>spiegazione audio/definizione</strong>.
+                </p>
+
+                <!-- Griglia Carte Memory Audio -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 md:gap-6 mb-8" id="act2-grid">
+                    <!-- Generato via JS -->
+                </div>
+
+                <div class="flex justify-between items-center border-t border-slate-100 pt-4">
+                    <div id="act2-status" class="text-sm font-semibold text-slate-600">Coppie trovate: 0 / 3</div>
+                    <button onclick="initActivity2()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold transition-all">
+                        <i class="fa-solid fa-rotate-right mr-1"></i> Ricomincia
+                    </button>
+                </div>
+
+                <!-- Scheda Obiettivi -->
+                <div class="mt-8 pt-6 border-t border-dashed border-slate-200">
+                    <button onclick="toggleObiettivi('act2-goals')" class="w-full flex items-center justify-between text-left text-slate-700 font-display font-semibold hover:text-sky-600 transition-colors">
+                        <span class="flex items-center gap-2"><i class="fa-solid fa-graduation-cap text-sky-500"></i> Obiettivi Didattici (Audio & Definizioni)</span>
+                        <i id="act2-goals-icon" class="fa-solid fa-chevron-down transition-transform"></i>
+                    </button>
+                    <div id="act2-goals" class="hidden mt-4 bg-slate-50 p-4 rounded-2xl text-sm text-slate-600 space-y-2">
+                        <p>• <strong>Associazione semantico-acustica:</strong> Abbinamento di concetti storici astratti alle rispettive spiegazioni vocali.</p>
+                        <p>• <strong>Potenziamento della memoria di lavoro auditiva:</strong> Trattenere e recuperare informazioni spiegate oralmente.</p>
+                        <p>• <strong>Applicabilità multidisciplinare:</strong> Metodologia trasferibile a scienze, inglese e storia.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= ATTIVITÀ 3 ================= -->
+        <section id="activity-3" class="tab-content hidden">
+            <div class="bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-sky-100">
+                <div class="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+                    <div>
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 uppercase tracking-wider mb-2">
+                            <i class="fa-solid fa-circle text-[8px]"></i> Difficoltà Intermedia • Scienze Naturali
+                        </span>
+                        <h2 class="text-2xl md:text-3xl font-display font-bold text-slate-800">Attività 3: Selezione dei Vertebrati</h2>
+                    </div>
+                    <div class="bg-emerald-50 text-emerald-800 px-4 py-2 rounded-2xl border border-emerald-200 text-sm font-semibold flex items-center gap-2">
+                        <i class="fa-solid fa-paw text-lg"></i> Obiettivo: Trova solo i VERTEBRATI
+                    </div>
+                </div>
+
+                <p class="text-slate-600 font-medium mb-6">
+                    Osserva la fattoria degli animali. Clicca <strong>solamente sugli animali VERTEBRATI</strong> (con colonna vertebrale e scheletro). Evita gli invertebrati!
+                </p>
+
+                <!-- Griglia Carte Animali -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-6 mb-8" id="act3-grid">
+                    <!-- Generato via JS -->
+                </div>
+
+                <div class="flex justify-between items-center border-t border-slate-100 pt-4">
+                    <div id="act3-counter" class="text-sm font-semibold text-slate-700">Vertebrati trovati: 0 / 4</div>
+                    <button onclick="initActivity3()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold transition-all">
+                        <i class="fa-solid fa-rotate-right mr-1"></i> Ricomincia
+                    </button>
+                </div>
+
+                <!-- Scheda Obiettivi -->
+                <div class="mt-8 pt-6 border-t border-dashed border-slate-200">
+                    <button onclick="toggleObiettivi('act3-goals')" class="w-full flex items-center justify-between text-left text-slate-700 font-display font-semibold hover:text-sky-600 transition-colors">
+                        <span class="flex items-center gap-2"><i class="fa-solid fa-graduation-cap text-sky-500"></i> Obiettivi Didattici (Scienze)</span>
+                        <i id="act3-goals-icon" class="fa-solid fa-chevron-down transition-transform"></i>
+                    </button>
+                    <div id="act3-goals" class="hidden mt-4 bg-slate-50 p-4 rounded-2xl text-sm text-slate-600 space-y-2">
+                        <p>• <strong>Classificazione biologica:</strong> Riconoscimento differenziale tra zoologia vertebrata e invertebrata.</p>
+                        <p>• <strong>Controllo dell'impulsività:</strong> Analisi prima della selezione per escludere gli elementi interferenti.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= ATTIVITÀ 4 ================= -->
+        <section id="activity-4" class="tab-content hidden">
+            <div class="bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-sky-100">
+                <div class="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+                    <div>
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 uppercase tracking-wider mb-2">
+                            <i class="fa-solid fa-circle text-[8px]"></i> Difficoltà Avanzata / Adattabile • Storia & Grammatica
+                        </span>
+                        <h2 class="text-2xl md:text-3xl font-display font-bold text-slate-800">Attività 4: Storia, Video e Riconoscimento Grammaticale</h2>
+                    </div>
+                </div>
+
+                <!-- Parte A: Sintesi Video / Storia -->
+                <div class="mb-10 bg-slate-900 text-white p-6 rounded-3xl shadow-md relative overflow-hidden">
+                    <div class="flex flex-col md:flex-row items-center gap-6">
+                        <div class="w-full md:w-1/2 bg-slate-800 rounded-2xl p-6 border border-slate-700 text-center flex flex-col items-center justify-center min-h-[200px]">
+                            <div class="w-16 h-16 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center text-3xl mb-3 animate-pulse">
+                                <i class="fa-solid fa-landmark"></i>
+                            </div>
+                            <h4 class="font-display font-bold text-lg text-purple-200 mb-2">La Civiltà Egizia e il Nilo</h4>
+                            <p class="text-xs text-slate-300 mb-4">Breve sintesi audio-visiva dell'argomento storico</p>
+                            <button onclick="speakText('Gli antichi Egizi vivevano lungo il fiume Nilo. Utilizzavano il papiro per scrivere, costruivano grandi piramidi e usavano l\'aratro per coltivare i campi.')" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-2">
+                                <i class="fa-solid fa-play"></i> Riproduci Sintesi Vocale
+                            </button>
+                        </div>
+                        <div class="w-full md:w-1/2 space-y-3">
+                            <h3 class="font-display text-xl text-purple-300 font-bold">Fase 1: Filtra i concetti storici pertinenti</h3>
+                            <p class="text-sm text-slate-300">
+                                Seleziona solo le carte pertinenti al contesto dell'Antico Egitto appena analizzato, scartando le tessere intrusive/interferenti.
+                            </p>
+                            <div id="act4-history-grid" class="grid grid-cols-2 gap-3 pt-2">
+                                <!-- Generato via JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Parte B: Associazione Grammaticale -->
+                <div class="border-t border-slate-200 pt-8">
+                    <h3 class="text-xl font-display font-bold text-slate-800 mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-spell-check text-purple-600"></i>
+                        Fase 2: Associazione Grammaticale (Articolo + Nome & Verbo + Coniugazione)
+                    </h3>
+                    <p class="text-slate-600 text-sm font-medium mb-6">
+                        Trascina o clicca sul blocco grammaticale corretto per completare le coppie linguistiche.
+                    </p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="act4-grammar-container">
+                        <!-- Generato via JS -->
+                    </div>
+                </div>
+
+                <!-- Scheda Obiettivi -->
+                <div class="mt-8 pt-6 border-t border-dashed border-slate-200">
+                    <button onclick="toggleObiettivi('act4-goals')" class="w-full flex items-center justify-between text-left text-slate-700 font-display font-semibold hover:text-sky-600 transition-colors">
+                        <span class="flex items-center gap-2"><i class="fa-solid fa-graduation-cap text-sky-500"></i> Obiettivi Didattici (Interdisciplinari)</span>
+                        <i id="act4-goals-icon" class="fa-solid fa-chevron-down transition-transform"></i>
+                    </button>
+                    <div id="act4-goals" class="hidden mt-4 bg-slate-50 p-4 rounded-2xl text-sm text-slate-600 space-y-2">
+                        <p>• <strong>Comprensione multimediale:</strong> Elaborazione delle informazioni lette/ascoltate in un contesto storico.</p>
+                        <p>• <strong>Competenza linguistico-grammaticale:</strong> Riconoscimento della concordanza genere/numero (Articolo - Nome) e della flessione verbale (Verbo - Coniugazione).</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal Risultato / Complimenti -->
+    <div id="reward-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-2xl border border-sky-100 transform transition-all scale-95 opacity-0" id="reward-modal-content">
+            <div class="w-20 h-20 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mx-auto text-4xl mb-4 shadow-inner">
+                <i class="fa-solid fa-trophy animate-bounce"></i>
+            </div>
+            <h3 class="text-2xl font-display font-bold text-slate-800 mb-2">Bravissimo! Superato! 🎉</h3>
+            <p id="reward-message" class="text-slate-600 mb-6 font-medium">Hai completato l'attività con successo raggiungendo tutti gli obiettivi!</p>
+            <button onclick="closeRewardModal()" class="w-full py-3 bg-gradient-to-r from-sky-500 to-indigo-600 text-white font-display font-bold rounded-xl shadow-lg hover:brightness-110 transition-all">
+                Continua il Percorso
+            </button>
+        </div>
+    </div>
+
+    <!-- JavaScript Applicativo -->
+    <script>
+        /* ================= STATO E CONFIGURAZIONE GLOBALE ================= */
+        let audioEnabled = true;
+        const synth = window.speechSynthesis;
+
+        // Effetti sonori con Tone.js
+        function playSound(type) {
+            if (!audioEnabled) return;
+            try {
+                if (Tone.context.state !== 'running') {
+                    Tone.start();
+                }
+                const now = Tone.now();
+                if (type === 'correct') {
+                    const synthSound = new Tone.Synth().toDestination();
+                    synthSound.triggerAttackRelease("C5", "8n", now);
+                    synthSound.triggerAttackRelease("E5", "8n", now + 0.15);
+                    synthSound.triggerAttackRelease("G5", "4n", now + 0.3);
+                } else if (type === 'wrong') {
+                    const synthSound = new Tone.Synth({ oscillator: { type: "sawtooth" } }).toDestination();
+                    synthSound.triggerAttackRelease("G3", "8n", now);
+                    synthSound.triggerAttackRelease("C3", "4n", now + 0.15);
+                } else if (type === 'win') {
+                    const synthSound = new Tone.PolySynth().toDestination();
+                    synthSound.triggerAttackRelease(["C4", "E4", "G4", "C5"], "2n");
+                }
+            } catch (e) {
+                console.log("Audio Web Synth Tone.js non inizializzato:", e);
+            }
+        }
+
+        function toggleGlobalAudio() {
+            audioEnabled = !audioEnabled;
+            const text = document.getElementById('audioText');
+            const icon = document.getElementById('audioIcon');
+            if (audioEnabled) {
+                text.innerText = "Effetti Audio: ON";
+                icon.className = "fa-solid fa-volume-high";
+            } else {
+                text.innerText = "Effetti Audio: OFF";
+                icon.className = "fa-solid fa-volume-xmark";
+                if (synth) synth.cancel();
+            }
+        }
+
+        // Sintesi Vocale Web Speech API
+        function speakText(text) {
+            if (!audioEnabled || !('speechSynthesis' in window)) return;
+            synth.cancel(); // Interrompe letture precedenti
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'it-IT';
+            utterance.rate = 0.9; // Velocità leggermente calibrata per l'accessibilità
+            synth.speak(utterance);
+        }
+
+        // Navigazione tra le schede
+        function switchTab(tabNumber) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-white', 'text-sky-600', 'shadow-sm');
+                btn.classList.add('text-slate-600');
+            });
+
+            document.getElementById(`activity-${tabNumber}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-btn-${tabNumber}`);
+            activeBtn.classList.add('bg-white', 'text-sky-600', 'shadow-sm');
+            
+            if (synth) synth.cancel();
+        }
+
+        // Accordion Obiettivi Didattici
+        function toggleObiettivi(id) {
+            const container = document.getElementById(id);
+            const icon = document.getElementById(`${id}-icon`);
+            if (container.classList.contains('hidden')) {
+                container.classList.remove('hidden');
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                container.classList.add('hidden');
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Modal di premio/completamento
+        function showRewardModal(msg) {
+            playSound('win');
+            const modal = document.getElementById('reward-modal');
+            const modalContent = document.getElementById('reward-modal-content');
+            document.getElementById('reward-message').innerText = msg;
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 50);
+        }
+
+        function closeRewardModal() {
+            const modal = document.getElementById('reward-modal');
+            const modalContent = document.getElementById('reward-modal-content');
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        /* ================= CODICE ATTIVITÀ 1 ================= */
+        const act1Sentence = "OGNI GIORNO LUIGI DOPO ESSERSI ALZATO FA COLAZIONE MANGIANDO UNA MELA, POI SI LAVA I DENTI E SI VESTE. PRIMA DI USCIRE DI CASA CONTROLLA LO ZAINO E SI INCAMMINA PER ANDARE A SCUOLA.";
+        
+        const act1Items = [
+            { id: 1, name: 'Mela', icon: 'fa-apple-whole', color: 'text-red-500', correct: true },
+            { id: 2, name: 'Amaca', icon: 'fa-umbrella-beach', color: 'text-amber-500', correct: false },
+            { id: 3, name: 'Rubinetto / Igiene', icon: 'fa-faucet-drip', color: 'text-blue-500', correct: true },
+            { id: 4, name: 'Zaino', icon: 'fa-bag-shopping', color: 'text-emerald-500', correct: true }
+        ];
+
+        let act1Selected = [];
+
+        function initActivity1() {
+            act1Selected = [];
+            document.getElementById('act1-score').innerText = "Selezionate: 0 / 2";
+            const grid = document.getElementById('act1-grid');
+            grid.innerHTML = '';
+
+            act1Items.forEach(item => {
+                const card = document.createElement('button');
+                card.id = `act1-card-${item.id}`;
+                card.onclick = () => selectAct1Card(item);
+                card.className = `p-6 bg-slate-50 border-2 border-slate-200 rounded-3xl flex flex-col items-center justify-center gap-3 hover:border-sky-400 hover:bg-sky-50/50 transition-all shadow-sm cursor-pointer transform hover:-translate-y-1`;
+                card.innerHTML = `
+                    <div class="w-16 h-16 rounded-2xl bg-white shadow-inner flex items-center justify-center text-3xl ${item.color}">
+                        <i class="fa-solid ${item.icon}"></i>
+                    </div>
+                    <span class="font-display font-bold text-slate-700 text-lg">${item.name}</span>
+                    <span class="status-badge text-xs font-semibold px-2.5 py-1 rounded-full opacity-0 transition-opacity">Selezionato</span>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function selectAct1Card(item) {
+            const card = document.getElementById(`act1-card-${item.id}`);
+            
+            if (item.correct) {
+                playSound('correct');
+                card.className = "p-6 bg-emerald-50 border-2 border-emerald-500 rounded-3xl flex flex-col items-center justify-center gap-3 shadow-md transform scale-105 transition-all";
+                const badge = card.querySelector('.status-badge');
+                badge.innerText = "CORRETTO ✓";
+                badge.className = "status-badge text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-200 text-emerald-800 opacity-100";
+                
+                if (!act1Selected.includes(item.id)) {
+                    act1Selected.push(item.id);
+                    speakText(`Bravissimo! ${item.name} è presente nella storia!`);
+                }
+
+                // Criterio completamento: identificare almeno 2 giuste
+                document.getElementById('act1-score').innerText = `Selezionate: ${act1Selected.length} / 2`;
+                if (act1Selected.length >= 2) {
+                    setTimeout(() => {
+                        showRewardModal("Hai identificato correttamente gli elementi della storia di Luigi!");
+                    }, 500);
+                }
+            } else {
+                playSound('wrong');
+                card.className = "p-6 bg-rose-50 border-2 border-rose-400 rounded-3xl flex flex-col items-center justify-center gap-3 shadow-sm animate-bounce-short";
+                const badge = card.querySelector('.status-badge');
+                badge.innerText = "ERRATO X";
+                badge.className = "status-badge text-xs font-bold px-2.5 py-1 rounded-full bg-rose-200 text-rose-800 opacity-100";
+                speakText(`${item.name} non è menzionato nella storia. Riprova!`);
+            }
+        }
+
+        /* ================= CODICE ATTIVITÀ 2 ================= */
+        const act2Concepts = [
+            { id: 'aratro', title: 'Aratro Pesante', icon: 'fa-tractor', desc: 'Strumento con vomere in ferro introdotto nel Medioevo per solcare e rivoltare i terreni più duri.' },
+            { id: 'ruota', title: 'Ruota', icon: 'fa-compact-disc', desc: 'Invenzione fondamentale dell antichità che ha rivoluzionato i trasporti e il commercio terrestre.' },
+            { id: 'papiro', title: 'Papiro', icon: 'fa-scroll', desc: 'Pianta acquatica utilizzata dagli antichi Egizi per fabbricare i primi fogli di carta su cui scrivere.' }
+        ];
+
+        let act2Cards = [];
+        let act2Flipped = [];
+        let act2Matched = 0;
+
+        function initActivity2() {
+            act2Matched = 0;
+            act2Flipped = [];
+            document.getElementById('act2-status').innerText = "Coppie trovate: 0 / 3";
+            
+            // Crea mazzo carte (1 carta immagine + 1 carta audio per ogni concetto)
+            act2Cards = [];
+            act2Concepts.forEach(c => {
+                act2Cards.push({ cid: c.id, type: 'img', title: c.title, icon: c.icon, desc: c.desc });
+                act2Cards.push({ cid: c.id, type: 'audio', title: c.title, icon: 'fa-volume-high', desc: c.desc });
+            });
+
+            // Mescola carte
+            act2Cards.sort(() => Math.random() - 0.5);
+
+            const grid = document.getElementById('act2-grid');
+            grid.innerHTML = '';
+
+            act2Cards.forEach((cardData, idx) => {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'perspective-1000 h-36 cursor-pointer';
+                cardEl.innerHTML = `
+                    <div id="act2-card-inner-${idx}" class="transform-style-3d relative w-full h-full rounded-2xl shadow-md bg-white border-2 border-slate-200 flex items-center justify-center p-3 text-center">
+                        <!-- Retro Carta -->
+                        <div onclick="flipAct2Card(${idx})" class="absolute inset-0 backface-hidden bg-gradient-to-br from-indigo-500 to-sky-600 rounded-2xl flex flex-col items-center justify-center text-white p-2">
+                            <i class="fa-solid fa-question text-3xl opacity-80"></i>
+                            <span class="text-xs font-display mt-1">Tocca per scoprire</span>
+                        </div>
+                        <!-- Fronte Carta -->
+                        <div class="absolute inset-0 backface-hidden rotate-y-180 bg-white rounded-2xl flex flex-col items-center justify-center p-3 border-2 border-sky-400">
+                            ${cardData.type === 'img' 
+                                ? `<i class="fa-solid ${cardData.icon} text-4xl text-indigo-600 mb-1"></i><span class="font-display font-bold text-xs text-slate-800">${cardData.title}</span>`
+                                : `<button onclick="event.stopPropagation(); speakText('${cardData.desc}')" class="w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-xl mb-1 hover:scale-110 transition-transform"><i class="fa-solid fa-volume-high"></i></button><span class="text-[11px] font-medium text-slate-600 leading-tight">Audio Definizione</span>`
+                            }
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(cardEl);
+            });
+        }
+
+        function flipAct2Card(idx) {
+            if (act2Flipped.length >= 2 || act2Flipped.includes(idx)) return;
+
+            const inner = document.getElementById(`act2-card-inner-${idx}`);
+            inner.classList.add('rotate-y-180');
+            act2Flipped.push(idx);
+
+            const cardData = act2Cards[idx];
+            if (cardData.type === 'audio') {
+                speakText(cardData.desc);
+            }
+
+            if (act2Flipped.length === 2) {
+                const [firstIdx, secondIdx] = act2Flipped;
+                const card1 = act2Cards[firstIdx];
+                const card2 = act2Cards[secondIdx];
+
+                if (card1.cid === card2.cid && card1.type !== card2.type) {
+                    // Match Corretto
+                    playSound('correct');
+                    act2Matched++;
+                    document.getElementById('act2-status').innerText = `Coppie trovate: ${act2Matched} / 3`;
+                    act2Flipped = [];
+
+                    if (act2Matched === 3) {
+                        setTimeout(() => {
+                            showRewardModal("Eccellente! Hai associato tutti i concetti storici alle rispettive definizioni audio!");
+                        }, 600);
+                    }
+                } else {
+                    // Match Errato
+                    playSound('wrong');
+                    setTimeout(() => {
+                        document.getElementById(`act2-card-inner-${firstIdx}`).classList.remove('rotate-y-180');
+                        document.getElementById(`act2-card-inner-${secondIdx}`).classList.remove('rotate-y-180');
+                        act2Flipped = [];
+                    }, 1400);
+                }
+            }
+        }
+
+        /* ================= CODICE ATTIVITÀ 3 ================= */
+        const act3Animals = [
+            { id: 1, name: 'Cane', icon: 'fa-dog', vertebrate: true, category: 'Mammifero' },
+            { id: 2, name: 'Farfalla', icon: 'fa-bug', vertebrate: false, category: 'Insetto' },
+            { id: 3, name: 'Aquila', icon: 'fa-crow', vertebrate: true, category: 'Uccello' },
+            { id: 4, name: 'Polpo', icon: 'fa-spaghetti-monster-flying', vertebrate: false, category: 'Mollusco' },
+            { id: 5, name: 'Pesce', icon: 'fa-fish', vertebrate: true, category: 'Pesci' },
+            { id: 6, name: 'Rana', icon: 'fa-frog', vertebrate: true, category: 'Anfibio' },
+            { id: 7, name: 'Chiocciola', icon: 'fa-snail', vertebrate: false, category: 'Mollusco' },
+            { id: 8, name: 'Ragno', icon: 'fa-spider', vertebrate: false, category: 'Aracnide' }
+        ];
+
+        let act3Found = 0;
+
+        function initActivity3() {
+            act3Found = 0;
+            document.getElementById('act3-counter').innerText = "Vertebrati trovati: 0 / 4";
+            const grid = document.getElementById('act3-grid');
+            grid.innerHTML = '';
+
+            act3Animals.forEach(animal => {
+                const btn = document.createElement('button');
+                btn.id = `act3-animal-${animal.id}`;
+                btn.onclick = () => selectAct3Animal(animal);
+                btn.className = "p-5 bg-slate-50 border-2 border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-emerald-400 hover:bg-emerald-50/40 transition-all shadow-sm";
+                btn.innerHTML = `
+                    <i class="fa-solid ${animal.icon} text-4xl text-slate-700"></i>
+                    <span class="font-display font-bold text-slate-800 text-sm">${animal.name}</span>
+                    <span class="badge text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600">Seleziona</span>
+                `;
+                grid.appendChild(btn);
+            });
+        }
+
+        function selectAct3Animal(animal) {
+            const btn = document.getElementById(`act3-animal-${animal.id}`);
+            const badge = btn.querySelector('.badge');
+
+            if (animal.vertebrate) {
+                if (btn.classList.contains('bg-emerald-100')) return; // Già trovato
+                
+                playSound('correct');
+                btn.className = "p-5 bg-emerald-100 border-2 border-emerald-500 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-md transform scale-105 transition-all";
+                badge.innerText = "VERTEBRATO ✓";
+                badge.className = "badge text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-800";
+                
+                act3Found++;
+                speakText(`${animal.name} è un vertebrato! Possiede lo scheletro interno.`);
+                document.getElementById('act3-counter').innerText = `Vertebrati trovati: ${act3Found} / 4`;
+
+                if (act3Found === 4) {
+                    setTimeout(() => {
+                        showRewardModal("Ottimo lavoro! Hai individuato tutti gli animali VERTEBRATI escludendo gli invertebrati!");
+                    }, 500);
+                }
+            } else {
+                playSound('wrong');
+                btn.className = "p-5 bg-rose-50 border-2 border-rose-400 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-sm animate-bounce-short";
+                badge.innerText = "INVERTEBRATO X";
+                badge.className = "badge text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-200 text-rose-800";
+                speakText(`Attenzione! La ${animal.name} è un INVERTEBRATO. Non ha colonna vertebrale!`);
+            }
+        }
+
+        /* ================= CODICE ATTIVITÀ 4 ================= */
+        const act4HistoryCards = [
+            { id: 1, name: 'Papiro Egizio', correct: true },
+            { id: 2, name: 'Astronave Spaziale', correct: false },
+            { id: 3, name: 'Fiume Nilo', correct: true },
+            { id: 4, name: 'Automobile Elettrica', correct: false }
+        ];
+
+        const act4GrammarPairs = [
+            { id: 1, type: 'Articolo - Nome', item1: 'IL (Articolo determinativo)', item2: 'LIBRO (Nome maschile singolare)' },
+            { id: 2, type: 'Verbo - Coniugazione', item1: 'MANGIARE (Infinito presente)', item2: 'LUIGI MANGIA (3ª pers. singolare)' }
+        ];
+
+        function initActivity4() {
+            // Inizializza Griglia Storia
+            const histGrid = document.getElementById('act4-history-grid');
+            histGrid.innerHTML = '';
+            act4HistoryCards.forEach(card => {
+                const btn = document.createElement('button');
+                btn.className = "p-3 rounded-xl border border-slate-700 bg-slate-800 text-slate-200 text-xs font-semibold hover:bg-purple-900/50 hover:border-purple-500 transition-all text-left flex items-center justify-between";
+                btn.onclick = () => selectAct4HistoryCard(btn, card);
+                btn.innerHTML = `<span>${card.name}</span> <i class="fa-regular fa-circle text-slate-500"></i>`;
+                histGrid.appendChild(btn);
+            });
+
+            // Inizializza Blocco Grammaticale
+            const gramContainer = document.getElementById('act4-grammar-container');
+            gramContainer.innerHTML = '';
+            act4GrammarPairs.forEach(pair => {
+                const box = document.createElement('div');
+                box.className = "bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3";
+                box.innerHTML = `
+                    <span class="text-xs font-bold text-purple-700 uppercase tracking-wider">${pair.type}</span>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="p-3 bg-white border border-slate-200 rounded-xl text-center text-xs md:text-sm font-bold text-slate-700 shadow-sm">
+                            ${pair.item1}
+                        </div>
+                        <button onclick="checkGrammarMatch(this)" class="p-3 bg-purple-50 hover:bg-purple-100 border-2 border-dashed border-purple-300 rounded-xl text-center text-xs md:text-sm font-bold text-purple-800 transition-all">
+                            🔗 Collega: ${pair.item2}
+                        </button>
+                    </div>
+                `;
+                gramContainer.appendChild(box);
+            });
+        }
+
+        function selectAct4HistoryCard(btn, card) {
+            const icon = btn.querySelector('i');
+            if (card.correct) {
+                playSound('correct');
+                btn.className = "p-3 rounded-xl border border-emerald-500 bg-emerald-950/60 text-emerald-200 text-xs font-semibold text-left flex items-center justify-between";
+                icon.className = "fa-solid fa-circle-check text-emerald-400";
+                speakText(`Corretto! ${card.name} riguarda la storia degli Egizi.`);
+            } else {
+                playSound('wrong');
+                btn.className = "p-3 rounded-xl border border-rose-500 bg-rose-950/60 text-rose-200 text-xs font-semibold text-left flex items-center justify-between animate-bounce-short";
+                icon.className = "fa-solid fa-circle-xmark text-rose-400";
+                speakText(`Errato! ${card.name} è un elemento intrusivo estraneo.`);
+            }
+        }
+
+        function checkGrammarMatch(btn) {
+            playSound('correct');
+            btn.className = "p-3 bg-emerald-100 border-2 border-emerald-500 rounded-xl text-center text-xs md:text-sm font-bold text-emerald-900 shadow-sm";
+            btn.innerHTML = "ABBINATO CORRETTAMENTE ✓";
+            speakText("Abbinamento grammaticale corretto!");
+        }
+
+        /* ================= AVVIO APPLICAZIONE ================= */
+        window.onload = function() {
+            initActivity1();
+            initActivity2();
+            initActivity3();
+            initActivity4();
+        };
+    </script>
+</body>
+</html>
